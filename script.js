@@ -1,13 +1,16 @@
 const taskInput = document.getElementById("taskInput");
 const addButton = document.getElementById("addButton");
+const aiButton = document.getElementById("aiButton");
 const taskList = document.getElementById("taskList");
 const allButton = document.getElementById("allButton");
 const activeButton = document.getElementById("activeButton");
 const completedButton = document.getElementById("completedButton");
+const clearButton = document.getElementById("clearButton");
 const countText = document.getElementById("countText");
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let currentFilter = "all";
+let editingIndex = null;
 
 function saveTasks() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -37,25 +40,57 @@ function showTasks() {
       taskItem.classList.add("completed");
     }
 
-    const taskSpan = document.createElement("span");
-    taskSpan.textContent = task.text;
+    let taskTextElement;
+
+    if (editingIndex === index) {
+      taskTextElement = document.createElement("input");
+      taskTextElement.value = task.text;
+    } else {
+      taskTextElement = document.createElement("span");
+      taskTextElement.textContent = task.text;
+
+      taskTextElement.addEventListener("click", function () {
+        tasks[index].completed = !tasks[index].completed;
+        saveTasks();
+        showTasks();
+      });
+    }
+
+    const editButton = document.createElement("button");
+    editButton.textContent = editingIndex === index ? "保存" : "编辑";
 
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "删除";
 
-    taskSpan.addEventListener("click", function () {
-      tasks[index].completed = !tasks[index].completed;
+    editButton.addEventListener("click", function () {
+      if (editingIndex !== index) {
+        editingIndex = index;
+        showTasks();
+        return;
+      }
+
+      const newText = taskTextElement.value.trim();
+
+      if (newText === "") {
+        alert("请输入任务内容");
+        return;
+      }
+
+      tasks[index].text = newText;
+      editingIndex = null;
       saveTasks();
       showTasks();
     });
 
     deleteButton.addEventListener("click", function () {
       tasks.splice(index, 1);
+      editingIndex = null;
       saveTasks();
       showTasks();
     });
 
-    taskItem.appendChild(taskSpan);
+    taskItem.appendChild(taskTextElement);
+    taskItem.appendChild(editButton);
     taskItem.appendChild(deleteButton);
     taskList.appendChild(taskItem);
   });
@@ -77,6 +112,7 @@ function addTask() {
   saveTasks();
   showTasks();
   taskInput.value = "";
+  taskInput.focus();
 }
 
 addButton.addEventListener("click", function () {
@@ -86,6 +122,51 @@ addButton.addEventListener("click", function () {
 taskInput.addEventListener("keydown", function (event) {
   if (event.key === "Enter") {
     addTask();
+  }
+});
+
+aiButton.addEventListener("click", async function () {
+  const goal = taskInput.value.trim();
+
+  if (goal === "") {
+    alert("请输入目标");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/breakdown", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        goal: goal
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("AI request failed");
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data.tasks)) {
+      throw new Error("Tasks is not an array");
+    }
+
+    data.tasks.forEach(function (taskText) {
+      tasks.push({
+        text: taskText,
+        completed: false
+      });
+    });
+
+    saveTasks();
+    showTasks();
+    taskInput.value = "";
+    taskInput.focus();
+  } catch (error) {
+    alert("AI 拆解失败，请稍后再试");
   }
 });
 
@@ -101,6 +182,19 @@ activeButton.addEventListener("click", function () {
 
 completedButton.addEventListener("click", function () {
   currentFilter = "completed";
+  showTasks();
+});
+
+clearButton.addEventListener("click", function () {
+  const isConfirmed = confirm("确定要清空全部任务吗？");
+
+  if (!isConfirmed) {
+    return;
+  }
+
+  tasks = [];
+  editingIndex = null;
+  saveTasks();
   showTasks();
 });
 
