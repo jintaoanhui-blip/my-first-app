@@ -1,6 +1,7 @@
 const taskInput = document.getElementById("taskInput");
 const addButton = document.getElementById("addButton");
 const aiButton = document.getElementById("aiButton");
+const aiError = document.getElementById("aiError");
 const taskList = document.getElementById("taskList");
 const allButton = document.getElementById("allButton");
 const activeButton = document.getElementById("activeButton");
@@ -133,6 +134,11 @@ aiButton.addEventListener("click", async function () {
     return;
   }
 
+  aiError.textContent = "";
+  aiError.style.display = "none";
+  aiButton.textContent = "AI 拆解中...";
+  aiButton.disabled = true;
+
   try {
     const response = await fetch("/api/breakdown", {
       method: "POST",
@@ -166,7 +172,11 @@ aiButton.addEventListener("click", async function () {
     taskInput.value = "";
     taskInput.focus();
   } catch (error) {
-    alert("AI 拆解失败，请稍后再试");
+    aiError.textContent = "AI 拆解失败，请稍后重试。";
+    aiError.style.display = "block";
+  } finally {
+    aiButton.textContent = "AI 拆解任务";
+    aiButton.disabled = false;
   }
 });
 

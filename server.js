@@ -7,8 +7,7 @@ import axios from "axios";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
-const HOST = "127.0.0.1";
+const PORT = process.env.PORT || 3000;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,6 +74,6 @@ app.post("/api/breakdown", async (req, res) => {
 
 app.use("/", express.static(__dirname));
 
-app.listen(PORT, HOST, () => {
-  console.log(`Server is running at http://${HOST}:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
