@@ -17,6 +17,7 @@ const taskInput = document.getElementById("taskInput");
 const addButton = document.getElementById("addButton");
 const aiButton = document.getElementById("aiButton");
 const aiError = document.getElementById("aiError");
+const todoNotice = document.getElementById("todoNotice");
 const taskList = document.getElementById("taskList");
 const allButton = document.getElementById("allButton");
 const activeButton = document.getElementById("activeButton");
@@ -34,7 +35,7 @@ const supabaseClient = isSupabaseConfigured && isSupabaseLoaded
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let tasks = [];
 let currentFilter = "all";
 let editingIndex = null;
 let currentUser = null;
@@ -129,6 +130,7 @@ async function signUp() {
 
     if (data.session?.user) {
       renderUser(data.session.user);
+      await loadTodos();
       closeAuthModal();
     } else {
       authStatus.textContent = "注册成功，请检查邮箱验证后登录";
@@ -166,6 +168,7 @@ async function signIn() {
     }
 
     renderUser(data.user);
+    await loadTodos();
     closeAuthModal();
   } catch (error) {
     authStatus.textContent = error.message;
@@ -190,6 +193,10 @@ async function signOut() {
     }
 
     renderUser(null);
+    tasks = [];
+    editingIndex = null;
+    showTasks();
+    setTodoNotice("请先登录后使用待办");
   } catch (error) {
     authStatus.textContent = error.message;
   } finally {
@@ -201,19 +208,133 @@ async function initAuth() {
   renderUser(null);
 
   if (!supabaseClient) {
+    tasks = [];
+    showTasks();
     return;
   }
 
   const { data } = await supabaseClient.auth.getSession();
   renderUser(data.session?.user || null);
+  await loadTodos();
 
-  supabaseClient.auth.onAuthStateChange(function (event, session) {
+  supabaseClient.auth.onAuthStateChange(async function (event, session) {
     renderUser(session?.user || null);
+    await loadTodos();
   });
 }
 
-function saveTasks() {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
+function setTodoNotice(message) {
+  todoNotice.textContent = message;
+}
+
+function clearTodoNotice() {
+  todoNotice.textContent = "";
+}
+
+function requireLoggedIn() {
+  if (currentUser) {
+    return true;
+  }
+
+  tasks = [];
+  editingIndex = null;
+  showTasks();
+  setTodoNotice("请先登录后使用待办");
+  return false;
+}
+
+async function loadTodos() {
+  if (!supabaseClient || !currentUser) {
+    tasks = [];
+    editingIndex = null;
+    showTasks();
+    setTodoNotice(currentUser ? "Supabase 暂不可用" : "请先登录后使用待办");
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("todos")
+    .select("id,user_id,text,completed,created_at")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    tasks = [];
+    editingIndex = null;
+    showTasks();
+    setTodoNotice("加载待办失败，请检查 Supabase todos 表和 RLS 策略");
+    return;
+  }
+
+  tasks = data || [];
+  editingIndex = null;
+  clearTodoNotice();
+  showTasks();
+}
+
+async function createTodo(text) {
+  const { data, error } = await supabaseClient
+    .from("todos")
+    .insert({
+      user_id: currentUser.id,
+      text: text,
+      completed: false
+    })
+    .select("id,user_id,text,completed,created_at")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function createTodos(todoTexts) {
+  const { data, error } = await supabaseClient
+    .from("todos")
+    .insert(todoTexts.map(function (todoText) {
+      return {
+        user_id: currentUser.id,
+        text: todoText,
+        completed: false
+      };
+    }))
+    .select("id,user_id,text,completed,created_at");
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+async function updateTodo(id, changes) {
+  const { data, error } = await supabaseClient
+    .from("todos")
+    .update(changes)
+    .eq("id", id)
+    .eq("user_id", currentUser.id)
+    .select("id,user_id,text,completed,created_at")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function deleteTodo(id) {
+  const { error } = await supabaseClient
+    .from("todos")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", currentUser.id);
+
+  if (error) {
+    throw error;
+  }
 }
 
 function showTasks() {
@@ -249,10 +370,18 @@ function showTasks() {
       taskTextElement = document.createElement("span");
       taskTextElement.textContent = task.text;
 
-      taskTextElement.addEventListener("click", function () {
-        tasks[index].completed = !tasks[index].completed;
-        saveTasks();
-        showTasks();
+      taskTextElement.addEventListener("click", async function () {
+        try {
+          const updatedTask = await updateTodo(task.id, {
+            completed: !task.completed
+          });
+
+          tasks[index] = updatedTask;
+          clearTodoNotice();
+          showTasks();
+        } catch (error) {
+          setTodoNotice("更新任务失败，请稍后重试");
+        }
       });
     }
 
@@ -262,7 +391,7 @@ function showTasks() {
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "删除";
 
-    editButton.addEventListener("click", function () {
+    editButton.addEventListener("click", async function () {
       if (editingIndex !== index) {
         editingIndex = index;
         showTasks();
@@ -276,17 +405,30 @@ function showTasks() {
         return;
       }
 
-      tasks[index].text = newText;
-      editingIndex = null;
-      saveTasks();
-      showTasks();
+      try {
+        const updatedTask = await updateTodo(task.id, {
+          text: newText
+        });
+
+        tasks[index] = updatedTask;
+        editingIndex = null;
+        clearTodoNotice();
+        showTasks();
+      } catch (error) {
+        setTodoNotice("保存任务失败，请稍后重试");
+      }
     });
 
-    deleteButton.addEventListener("click", function () {
-      tasks.splice(index, 1);
-      editingIndex = null;
-      saveTasks();
-      showTasks();
+    deleteButton.addEventListener("click", async function () {
+      try {
+        await deleteTodo(task.id);
+        tasks.splice(index, 1);
+        editingIndex = null;
+        clearTodoNotice();
+        showTasks();
+      } catch (error) {
+        setTodoNotice("删除任务失败，请稍后重试");
+      }
     });
 
     taskItem.appendChild(taskTextElement);
@@ -296,7 +438,11 @@ function showTasks() {
   });
 }
 
-function addTask() {
+async function addTask() {
+  if (!requireLoggedIn()) {
+    return;
+  }
+
   const taskText = taskInput.value.trim();
 
   if (taskText === "") {
@@ -304,15 +450,20 @@ function addTask() {
     return;
   }
 
-  tasks.push({
-    text: taskText,
-    completed: false
-  });
+  addButton.disabled = true;
 
-  saveTasks();
-  showTasks();
-  taskInput.value = "";
-  taskInput.focus();
+  try {
+    const newTask = await createTodo(taskText);
+    tasks.push(newTask);
+    clearTodoNotice();
+    showTasks();
+    taskInput.value = "";
+    taskInput.focus();
+  } catch (error) {
+    setTodoNotice("添加任务失败，请稍后重试");
+  } finally {
+    addButton.disabled = false;
+  }
 }
 
 addButton.addEventListener("click", function () {
@@ -352,6 +503,10 @@ taskInput.addEventListener("keydown", function (event) {
 });
 
 aiButton.addEventListener("click", async function () {
+  if (!requireLoggedIn()) {
+    return;
+  }
+
   const goal = taskInput.value.trim();
 
   if (goal === "") {
@@ -386,14 +541,10 @@ aiButton.addEventListener("click", async function () {
       throw new Error("Tasks is not an array");
     }
 
-    data.tasks.forEach(function (taskText) {
-      tasks.push({
-        text: taskText,
-        completed: false
-      });
-    });
+    const newTasks = await createTodos(data.tasks);
 
-    saveTasks();
+    tasks = tasks.concat(newTasks);
+    clearTodoNotice();
     showTasks();
     taskInput.value = "";
     taskInput.focus();
@@ -421,17 +572,45 @@ completedButton.addEventListener("click", function () {
   showTasks();
 });
 
-clearButton.addEventListener("click", function () {
+clearButton.addEventListener("click", async function () {
+  if (!requireLoggedIn()) {
+    return;
+  }
+
   const isConfirmed = confirm("确定要清空全部任务吗？");
 
   if (!isConfirmed) {
     return;
   }
 
-  tasks = [];
-  editingIndex = null;
-  saveTasks();
-  showTasks();
+  clearButton.disabled = true;
+
+  try {
+    const taskIds = tasks.map(function (task) {
+      return task.id;
+    });
+
+    if (taskIds.length > 0) {
+      const { error } = await supabaseClient
+        .from("todos")
+        .delete()
+        .in("id", taskIds)
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        throw error;
+      }
+    }
+
+    tasks = [];
+    editingIndex = null;
+    clearTodoNotice();
+    showTasks();
+  } catch (error) {
+    setTodoNotice("清空任务失败，请稍后重试");
+  } finally {
+    clearButton.disabled = false;
+  }
 });
 
 showTasks();
