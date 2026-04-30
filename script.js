@@ -1,5 +1,5 @@
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://qsqchuatnyclqrmrabgc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_ME3zi1_-kWgEWovE1QO8bw_Pmz_AgHc";
 
 const authEmail = document.getElementById("authEmail");
 const authPassword = document.getElementById("authPassword");
