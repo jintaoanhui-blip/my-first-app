@@ -9,7 +9,13 @@ const completedButton = document.getElementById("completedButton");
 const clearButton = document.getElementById("clearButton");
 const countText = document.getElementById("countText");
 
-const API_BASE_URL = "https://todo-ai-backend.onrender.com";
+const isLocalFrontend =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
+const API_BASE_URL = isLocalFrontend
+  ? "http://localhost:3000"
+  : "https://todo-ai-backend.onrender.com";
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let currentFilter = "all";

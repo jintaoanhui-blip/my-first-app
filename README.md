@@ -10,17 +10,25 @@
 
 ## 后端地址
 
-前端会请求 Render 上的后端服务：
+前端会根据运行环境自动选择后端地址：
 
 ```js
-const API_BASE_URL = "https://todo-ai-backend.onrender.com";
+const API_BASE_URL = isLocalFrontend
+  ? "http://localhost:3000"
+  : "https://todo-ai-backend.onrender.com";
 ```
 
-如果 Render 服务地址不同，请修改 `script.js` 里的 `API_BASE_URL`。
+本地预览时会请求 `http://localhost:3000`。部署到 GitHub Pages 后会请求云端 API 地址；后端正式部署后，请把 `script.js` 里的线上地址改成实际地址。
 
 ## 本地预览
 
-直接用浏览器打开 `index.html` 即可预览基础页面。AI 拆解功能需要后端服务可访问。
+启动本地后端后，再启动一个静态服务器预览前端：
+
+```bash
+python3 -m http.server 8000
+```
+
+然后打开 `http://localhost:8000`。AI 拆解功能会请求本地后端 `http://localhost:3000`。
 
 ## 部署
 
