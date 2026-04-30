@@ -25,6 +25,7 @@ const clearButton = document.getElementById("clearButton");
 const countText = document.getElementById("countText");
 
 const API_BASE_URL = "https://todo-ai-backend-zx9w.onrender.com";
+const API_ACCESS_KEY = "123456";
 const isSupabaseConfigured =
   SUPABASE_URL !== "YOUR_SUPABASE_URL" &&
   SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY";
@@ -367,7 +368,8 @@ aiButton.addEventListener("click", async function () {
     const response = await fetch(`${API_BASE_URL}/api/breakdown`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "x-api-key": API_ACCESS_KEY
       },
       body: JSON.stringify({
         goal: goal
