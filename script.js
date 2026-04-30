@@ -9,6 +9,8 @@ const completedButton = document.getElementById("completedButton");
 const clearButton = document.getElementById("clearButton");
 const countText = document.getElementById("countText");
 
+const API_BASE_URL = "https://todo-ai-backend.onrender.com";
+
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let currentFilter = "all";
 let editingIndex = null;
@@ -140,7 +142,7 @@ aiButton.addEventListener("click", async function () {
   aiButton.disabled = true;
 
   try {
-    const response = await fetch("/api/breakdown", {
+    const response = await fetch(`${API_BASE_URL}/api/breakdown`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
