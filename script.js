@@ -6,7 +6,13 @@ const authPassword = document.getElementById("authPassword");
 const signUpButton = document.getElementById("signUpButton");
 const signInButton = document.getElementById("signInButton");
 const signOutButton = document.getElementById("signOutButton");
+const userMenuButton = document.getElementById("userMenuButton");
+const authModal = document.getElementById("authModal");
+const closeAuthButton = document.getElementById("closeAuthButton");
+const authForm = document.getElementById("authForm");
 const authStatus = document.getElementById("authStatus");
+const userPanel = document.getElementById("userPanel");
+const currentUserText = document.getElementById("currentUserText");
 const taskInput = document.getElementById("taskInput");
 const addButton = document.getElementById("addButton");
 const aiButton = document.getElementById("aiButton");
@@ -30,13 +36,39 @@ const supabaseClient = isSupabaseConfigured && isSupabaseLoaded
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let currentFilter = "all";
 let editingIndex = null;
+let currentUser = null;
+
+function getUserDisplayName(user) {
+  return user.email.split("@")[0];
+}
+
+function openAuthModal() {
+  authModal.classList.add("open");
+  authModal.setAttribute("aria-hidden", "false");
+  authEmail.focus();
+}
+
+function closeAuthModal() {
+  authModal.classList.remove("open");
+  authModal.setAttribute("aria-hidden", "true");
+}
 
 function renderUser(user) {
+  currentUser = user;
+
   if (user) {
-    authStatus.textContent = "当前用户：" + user.email;
-    signOutButton.style.display = "inline-block";
+    userMenuButton.textContent = getUserDisplayName(user);
+    currentUserText.textContent = "当前用户：" + user.email;
+    authForm.style.display = "none";
+    userPanel.classList.add("open");
+    authStatus.textContent = "";
     return;
   }
+
+  userMenuButton.textContent = "登录";
+  currentUserText.textContent = "";
+  authForm.style.display = "block";
+  userPanel.classList.remove("open");
 
   if (!isSupabaseConfigured) {
     authStatus.textContent = "请先配置 Supabase";
@@ -45,8 +77,6 @@ function renderUser(user) {
   } else {
     authStatus.textContent = "未登录";
   }
-
-  signOutButton.style.display = "none";
 }
 
 function setAuthLoading(isLoading) {
@@ -96,7 +126,12 @@ async function signUp() {
       throw error;
     }
 
-    renderUser(data.user);
+    if (data.session?.user) {
+      renderUser(data.session.user);
+      closeAuthModal();
+    } else {
+      authStatus.textContent = "注册成功，请检查邮箱验证后登录";
+    }
   } catch (error) {
     authStatus.textContent = error.message;
   } finally {
@@ -130,6 +165,7 @@ async function signIn() {
     }
 
     renderUser(data.user);
+    closeAuthModal();
   } catch (error) {
     authStatus.textContent = error.message;
   } finally {
@@ -280,6 +316,20 @@ function addTask() {
 
 addButton.addEventListener("click", function () {
   addTask();
+});
+
+userMenuButton.addEventListener("click", function () {
+  openAuthModal();
+});
+
+closeAuthButton.addEventListener("click", function () {
+  closeAuthModal();
+});
+
+authModal.addEventListener("click", function (event) {
+  if (event.target === authModal) {
+    closeAuthModal();
+  }
 });
 
 signUpButton.addEventListener("click", function () {

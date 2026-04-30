@@ -7,21 +7,33 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="todo-app">
-    <h1>待办事项</h1>
+  <button id="userMenuButton" class="user-menu-button" aria-haspopup="dialog">登录</button>
 
-    <section class="auth-area" aria-label="用户登录">
-      <div class="auth-fields">
+  <div id="authModal" class="auth-modal" aria-hidden="true">
+    <div class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button id="closeAuthButton" class="close-auth-button" aria-label="关闭">×</button>
+      <h2 id="authTitle">账户</h2>
+
+      <div id="authForm">
         <input id="authEmail" type="email" placeholder="邮箱">
         <input id="authPassword" type="password" placeholder="密码">
+        <div class="auth-actions">
+          <button id="signInButton">登录</button>
+          <button id="signUpButton">注册</button>
+        </div>
       </div>
-      <div class="auth-actions">
-        <button id="signUpButton">注册</button>
-        <button id="signInButton">登录</button>
-        <button id="signOutButton" class="secondary-button">退出</button>
+
+      <div id="userPanel" class="user-panel">
+        <p id="currentUserText"></p>
+        <button id="signOutButton" class="secondary-button">退出登录</button>
       </div>
+
       <p id="authStatus" class="auth-status">未登录</p>
-    </section>
+    </div>
+  </div>
+
+  <main class="todo-app">
+    <h1>待办事项</h1>
 
     <div class="input-area">
       <input id="taskInput" type="text" placeholder="请输入任务">

@@ -21,29 +21,90 @@ h1 {
   text-align: center;
 }
 
-.auth-area {
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 18px;
-  padding-bottom: 18px;
+.user-menu-button {
+  position: fixed;
+  right: 18px;
+  top: 18px;
+  z-index: 20;
+  background: #111827;
+  color: #ffffff;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.auth-fields,
+.user-menu-button:hover {
+  background: #374151;
+}
+
+.auth-modal {
+  align-items: center;
+  background: rgba(17, 24, 39, 0.45);
+  display: none;
+  inset: 0;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 30;
+}
+
+.auth-modal.open {
+  display: flex;
+}
+
+.auth-dialog {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(17, 24, 39, 0.24);
+  max-width: 360px;
+  padding: 24px;
+  position: relative;
+  width: 100%;
+}
+
+.auth-dialog h2 {
+  font-size: 20px;
+  margin: 0 0 16px;
+}
+
+.close-auth-button {
+  background: transparent;
+  font-size: 22px;
+  padding: 4px 8px;
+  position: absolute;
+  right: 14px;
+  top: 12px;
+}
+
+#authForm input {
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
 .auth-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-}
-
-.auth-fields {
-  margin-bottom: 8px;
-}
-
-.auth-actions {
-  margin-bottom: 8px;
+  margin-top: 4px;
 }
 
 .auth-actions button {
   flex: 1;
+}
+
+.user-panel {
+  display: none;
+}
+
+.user-panel.open {
+  display: block;
+}
+
+#currentUserText {
+  color: #1f2937;
+  margin: 0 0 12px;
+  word-break: break-word;
 }
 
 .secondary-button {
@@ -53,7 +114,7 @@ h1 {
 .auth-status {
   color: #4b5563;
   font-size: 14px;
-  margin: 0;
+  margin: 12px 0 0;
 }
 
 .input-area {
