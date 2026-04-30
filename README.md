@@ -15,7 +15,7 @@
 ```js
 const API_BASE_URL = isLocalFrontend
   ? "http://localhost:3000"
-  : "https://todo-ai-backend.onrender.com";
+  : "https://todo-ai-backend-zx9w.onrender.com";
 ```
 
 本地预览时会请求 `http://localhost:3000`。部署到 GitHub Pages 后会请求云端 API 地址；后端正式部署后，请把 `script.js` 里的线上地址改成实际地址。

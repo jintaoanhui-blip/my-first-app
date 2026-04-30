@@ -15,7 +15,7 @@ const isLocalFrontend =
 
 const API_BASE_URL = isLocalFrontend
   ? "http://localhost:3000"
-  : "https://todo-ai-backend.onrender.com";
+  : "https://todo-ai-backend-zx9w.onrender.com";
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let currentFilter = "all";
