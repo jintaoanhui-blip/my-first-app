@@ -1,3 +1,12 @@
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const authEmail = document.getElementById("authEmail");
+const authPassword = document.getElementById("authPassword");
+const signUpButton = document.getElementById("signUpButton");
+const signInButton = document.getElementById("signInButton");
+const signOutButton = document.getElementById("signOutButton");
+const authStatus = document.getElementById("authStatus");
 const taskInput = document.getElementById("taskInput");
 const addButton = document.getElementById("addButton");
 const aiButton = document.getElementById("aiButton");
@@ -10,10 +19,161 @@ const clearButton = document.getElementById("clearButton");
 const countText = document.getElementById("countText");
 
 const API_BASE_URL = "https://todo-ai-backend-zx9w.onrender.com";
+const isSupabaseConfigured =
+  SUPABASE_URL !== "YOUR_SUPABASE_URL" &&
+  SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY";
+const isSupabaseLoaded = Boolean(window.supabase);
+const supabaseClient = isSupabaseConfigured && isSupabaseLoaded
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 let currentFilter = "all";
 let editingIndex = null;
+
+function renderUser(user) {
+  if (user) {
+    authStatus.textContent = "当前用户：" + user.email;
+    signOutButton.style.display = "inline-block";
+    return;
+  }
+
+  if (!isSupabaseConfigured) {
+    authStatus.textContent = "请先配置 Supabase";
+  } else if (!isSupabaseLoaded) {
+    authStatus.textContent = "Supabase 加载失败";
+  } else {
+    authStatus.textContent = "未登录";
+  }
+
+  signOutButton.style.display = "none";
+}
+
+function setAuthLoading(isLoading) {
+  signUpButton.disabled = isLoading;
+  signInButton.disabled = isLoading;
+  signOutButton.disabled = isLoading;
+}
+
+function getAuthInput() {
+  return {
+    email: authEmail.value.trim(),
+    password: authPassword.value
+  };
+}
+
+function validateAuthInput(email, password) {
+  if (!email || !password) {
+    authStatus.textContent = "请输入邮箱和密码";
+    return false;
+  }
+
+  return true;
+}
+
+async function signUp() {
+  if (!supabaseClient) {
+    authStatus.textContent = "请先配置 Supabase";
+    return;
+  }
+
+  const { email, password } = getAuthInput();
+
+  if (!validateAuthInput(email, password)) {
+    return;
+  }
+
+  setAuthLoading(true);
+  authStatus.textContent = "注册中...";
+
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email: email,
+      password: password
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    renderUser(data.user);
+  } catch (error) {
+    authStatus.textContent = error.message;
+  } finally {
+    setAuthLoading(false);
+  }
+}
+
+async function signIn() {
+  if (!supabaseClient) {
+    authStatus.textContent = "请先配置 Supabase";
+    return;
+  }
+
+  const { email, password } = getAuthInput();
+
+  if (!validateAuthInput(email, password)) {
+    return;
+  }
+
+  setAuthLoading(true);
+  authStatus.textContent = "登录中...";
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    renderUser(data.user);
+  } catch (error) {
+    authStatus.textContent = error.message;
+  } finally {
+    setAuthLoading(false);
+  }
+}
+
+async function signOut() {
+  if (!supabaseClient) {
+    return;
+  }
+
+  setAuthLoading(true);
+  authStatus.textContent = "退出中...";
+
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+      throw error;
+    }
+
+    renderUser(null);
+  } catch (error) {
+    authStatus.textContent = error.message;
+  } finally {
+    setAuthLoading(false);
+  }
+}
+
+async function initAuth() {
+  renderUser(null);
+
+  if (!supabaseClient) {
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getSession();
+  renderUser(data.session?.user || null);
+
+  supabaseClient.auth.onAuthStateChange(function (event, session) {
+    renderUser(session?.user || null);
+  });
+}
 
 function saveTasks() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -122,6 +282,18 @@ addButton.addEventListener("click", function () {
   addTask();
 });
 
+signUpButton.addEventListener("click", function () {
+  signUp();
+});
+
+signInButton.addEventListener("click", function () {
+  signIn();
+});
+
+signOutButton.addEventListener("click", function () {
+  signOut();
+});
+
 taskInput.addEventListener("keydown", function (event) {
   if (event.key === "Enter") {
     addTask();
@@ -211,3 +383,4 @@ clearButton.addEventListener("click", function () {
 });
 
 showTasks();
+initAuth();

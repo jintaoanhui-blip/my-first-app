@@ -10,6 +10,19 @@
   <main class="todo-app">
     <h1>待办事项</h1>
 
+    <section class="auth-area" aria-label="用户登录">
+      <div class="auth-fields">
+        <input id="authEmail" type="email" placeholder="邮箱">
+        <input id="authPassword" type="password" placeholder="密码">
+      </div>
+      <div class="auth-actions">
+        <button id="signUpButton">注册</button>
+        <button id="signInButton">登录</button>
+        <button id="signOutButton" class="secondary-button">退出</button>
+      </div>
+      <p id="authStatus" class="auth-status">未登录</p>
+    </section>
+
     <div class="input-area">
       <input id="taskInput" type="text" placeholder="请输入任务">
       <button id="addButton">添加</button>
@@ -30,6 +43,7 @@
     <ul id="taskList"></ul>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
 </html>

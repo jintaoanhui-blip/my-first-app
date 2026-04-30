@@ -6,29 +6,38 @@
 
 - `index.html`：页面结构
 - `style.css`：页面样式
-- `script.js`：待办事项交互和 AI 拆解接口调用
+- `script.js`：用户注册登录、待办事项交互和 AI 拆解接口调用
+
+## Supabase Auth 配置
+
+前端使用 Supabase Auth 做邮箱和密码注册/登录。创建 Supabase 项目后，在 `script.js` 里填写：
+
+```js
+const SUPABASE_URL = "你的 Supabase Project URL";
+const SUPABASE_ANON_KEY = "你的 Supabase anon public key";
+```
+
+这两个值在 Supabase Dashboard 的 `Project Settings` → `API` 页面查看。
 
 ## 后端地址
 
-前端会根据运行环境自动选择后端地址：
+前端会请求 Render 上的后端服务：
 
 ```js
-const API_BASE_URL = isLocalFrontend
-  ? "http://localhost:3000"
-  : "https://todo-ai-backend-zx9w.onrender.com";
+const API_BASE_URL = "https://todo-ai-backend-zx9w.onrender.com";
 ```
 
-本地预览时会请求 `http://localhost:3000`。部署到 GitHub Pages 后会请求云端 API 地址；后端正式部署后，请把 `script.js` 里的线上地址改成实际地址。
+后端不需要在本地启动，AI 拆解功能会请求云端 API。
 
 ## 本地预览
 
-启动本地后端后，再启动一个静态服务器预览前端：
+启动一个静态服务器预览前端：
 
 ```bash
 python3 -m http.server 8000
 ```
 
-然后打开 `http://localhost:8000`。AI 拆解功能会请求本地后端 `http://localhost:3000`。
+然后打开 `http://localhost:8000`。
 
 ## 部署
 
